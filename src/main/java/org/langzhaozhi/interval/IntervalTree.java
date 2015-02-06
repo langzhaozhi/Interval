@@ -39,30 +39,30 @@ public final class IntervalTree<T> {
     }
 
     /**
-     * 获取一个点aPoint所属的区间
+     * 获取一个点aPoint所属的区间,每次查询都是恒常的四步就立即匹配出结果
      * @param aPoint 一个点
      * @return 参数aPoint所在的区间
      */
     public Interval<T> getInterval(int aPoint) {
         IntervalNode<T> parentNode = this.mRootNode;
-        for (int level = 0;; ++level) {
-            //依次取最高8位、次高8位、次低8位、最低8位无符号值
-            int levalChar = ((aPoint >>> IntervalTree.BIT_MOVE_COUNT[ level ]) & 0xFF);
-            if (levalChar < parentNode.mMin) {
+        for (int depth = 0;; ++depth) {
+            //依次取最高8位、次高8位、次低8位、最低8位无符号值：恒常四步就是指对各个8位进行比较的次数恒定为4
+            int depthChar = ((aPoint >>> IntervalTree.BIT_MOVE_COUNT[ depth ]) & 0xFF);
+            if (depthChar < parentNode.mMin) {
                 IntervalNode<T> searchNode = parentNode.mChildrenNodes[ 0 ];
                 while (searchNode.mChildrenNodes != null) {
                     searchNode = searchNode.mChildrenNodes[ 0 ];
                 }
                 return searchNode.mInterval.contains( aPoint ) ? searchNode.mInterval : null;
             }
-            else if (levalChar > parentNode.mMax) {
+            else if (depthChar > parentNode.mMax) {
                 //类似递归的回溯
                 IntervalNode<T> rootNode = this.mRootNode;
                 while (parentNode != rootNode) {
                     parentNode = parentNode.mParentNode;
-                    levalChar = ((aPoint >>> IntervalTree.BIT_MOVE_COUNT[ --level ]) & 0xFF) + 1;
-                    if (levalChar <= parentNode.mMax) {
-                        IntervalNode<T> searchNode = parentNode.mChildrenNodes[ levalChar - parentNode.mMin ];
+                    depthChar = ((aPoint >>> IntervalTree.BIT_MOVE_COUNT[ --depth ]) & 0xFF) + 1;
+                    if (depthChar <= parentNode.mMax) {
+                        IntervalNode<T> searchNode = parentNode.mChildrenNodes[ depthChar - parentNode.mMin ];
                         while (searchNode.mChildrenNodes != null) {
                             searchNode = searchNode.mChildrenNodes[ 0 ];
                         }
@@ -72,13 +72,13 @@ public final class IntervalTree<T> {
                 return null;
             }
             else {
-                int levalChildIndex = levalChar - parentNode.mMin;
+                int levalChildIndex = depthChar - parentNode.mMin;
                 IntervalNode<T> searchNode = parentNode.mChildrenNodes[ levalChildIndex ];
-                if (level == 3) {
-                    return searchNode.mOwnerChar == levalChar ? searchNode.mInterval : searchNode.mInterval.contains( aPoint ) ? searchNode.mInterval : null;//此searchNode为第4层数据叶子节点
+                if (depth == 3) {
+                    return searchNode.mOwnerChar == depthChar ? searchNode.mInterval : searchNode.mInterval.contains( aPoint ) ? searchNode.mInterval : null;//此searchNode为第4层数据叶子节点
                 }
                 else {
-                    if (searchNode.mOwnerChar != levalChar) {
+                    if (searchNode.mOwnerChar != depthChar) {
                         while (searchNode.mChildrenNodes != null) {
                             searchNode = searchNode.mChildrenNodes[ 0 ];
                         }
@@ -123,25 +123,25 @@ public final class IntervalTree<T> {
 
         IntervalNode<T> search(int aPoint, int aLevel) {
             //依次取最高8位、次高8位、次低8位、最低8位无符号值
-            int levalChar = ((aPoint >>> IntervalTree.BIT_MOVE_COUNT[ aLevel ]) & 0xFF);
-            if (levalChar < this.mMin) {
+            int depthChar = ((aPoint >>> IntervalTree.BIT_MOVE_COUNT[ aLevel ]) & 0xFF);
+            if (depthChar < this.mMin) {
                 IntervalNode<T> searchNode = this.mChildrenNodes[ 0 ];
                 while (searchNode.mChildrenNodes != null) {
                     searchNode = searchNode.mChildrenNodes[ 0 ];
                 }
                 return searchNode;
             }
-            else if (levalChar > this.mMax) {
+            else if (depthChar > this.mMax) {
                 return null;
             }
             else {
-                int levalChildIndex = levalChar - this.mMin;
+                int levalChildIndex = depthChar - this.mMin;
                 IntervalNode<T> searchNode = this.mChildrenNodes[ levalChildIndex ];
                 if (aLevel == 3) {
                     return searchNode;//此searchNode为第4层数据叶子节点
                 }
                 else {
-                    if (searchNode.mOwnerChar != levalChar) {
+                    if (searchNode.mOwnerChar != depthChar) {
                         while (searchNode.mChildrenNodes != null) {
                             searchNode = searchNode.mChildrenNodes[ 0 ];
                         }
